@@ -6,6 +6,7 @@ import guru.springframework.spring6restmvc.repositories.CustomerRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,25 @@ class CustomerControllerIT {
 
     @Autowired
     CustomerController customerController;
+
+    @Rollback
+    @Transactional
+    @Test
+    void saveNewCustomerTest() {
+        CustomerDTO customerDTO = CustomerDTO.builder()
+                .name("New Customer")
+                .build();
+
+        ResponseEntity responseEntity = customerController.handlePost(customerDTO);
+        assertThat(responseEntity.getHeaders().getLocation()).isNotNull();
+
+        // Location: "/api/v1/customer/<UUID>"
+        String[] locationUUID = responseEntity.getHeaders().getLocation().getPath().split("/");
+        UUID savedUUID = UUID.fromString(locationUUID[4]);
+
+        Customer customer = customerRepository.findById(savedUUID).get();
+        assertThat(customer).isNotNull();
+    }
 
     @Rollback
     @Transactional
